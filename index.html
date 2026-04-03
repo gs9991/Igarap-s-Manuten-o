@@ -42,6 +42,7 @@
   .btn-amber { background:var(--amber-dim); color:var(--amber); border:1px solid rgba(224,168,85,0.25); }
   .btn-sm { padding:7px 14px; font-size:13px; }
   .btn-xs { padding:5px 11px; font-size:12px; border-radius:6px; font-weight:600; }
+  .btn:disabled { opacity:0.45; cursor:not-allowed; }
   .header { background:var(--bg1); border-bottom:1px solid var(--border); padding:13px 20px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
   .header-logo { display:flex; align-items:center; gap:10px; }
   .header-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
@@ -86,33 +87,15 @@
   .notif-text { font-size:13px; color:var(--blue); font-weight:500; }
   .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   @media(max-width:480px){ .form-row { grid-template-columns:1fr; } }
-
-  /* UPLOAD REAL */
-  .upload-area {
-    border:1px dashed var(--border2); border-radius:10px; padding:24px;
-    text-align:center; color:var(--text2); font-size:13px; cursor:pointer;
-    margin-top:4px; transition:background 0.15s, border-color 0.15s; position:relative;
-  }
+  .upload-area { border:1px dashed var(--border2); border-radius:10px; padding:24px; text-align:center; color:var(--text2); font-size:13px; cursor:pointer; margin-top:4px; transition:background 0.15s, border-color 0.15s; position:relative; }
   .upload-area:hover { background:var(--bg2); border-color:var(--accent); }
-  .upload-area input[type="file"] {
-    position:absolute; inset:0; width:100%; height:100%;
-    opacity:0; cursor:pointer; font-size:0;
-  }
+  .upload-area input[type="file"] { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; font-size:0; }
   .upload-preview { margin-top:12px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
-  .upload-thumb {
-    position:relative; width:80px; height:80px; border-radius:8px;
-    overflow:hidden; border:1px solid var(--border2); background:var(--bg3);
-    display:flex; align-items:center; justify-content:center;
-  }
+  .upload-thumb { position:relative; width:80px; height:80px; border-radius:8px; overflow:hidden; border:1px solid var(--border2); background:var(--bg3); display:flex; align-items:center; justify-content:center; }
   .upload-thumb img { width:100%; height:100%; object-fit:cover; }
-  .upload-thumb .rm {
-    position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.7);
-    border:none; color:white; border-radius:50%; width:18px; height:18px;
-    cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center; line-height:1;
-  }
+  .upload-thumb .rm { position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.7); border:none; color:white; border-radius:50%; width:18px; height:18px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center; line-height:1; }
   .upload-thumb .file-icon { font-size:28px; }
   .upload-count { font-size:12px; color:var(--accent); font-weight:600; margin-top:6px; }
-
   .user-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
   .user-info { display:flex; align-items:center; gap:10px; }
   .user-avatar { width:38px; height:38px; border-radius:50%; background:var(--bg3); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--text2); border:1px solid var(--border2); }
@@ -137,13 +120,30 @@
   .confirm-box h3 { font-size:16px; font-weight:600; margin-bottom:8px; }
   .confirm-box p { font-size:13px; color:var(--text2); margin-bottom:20px; line-height:1.5; }
   .confirm-actions { display:flex; gap:10px; justify-content:flex-end; }
+
+  /* Loading overlay */
+  .loading-overlay { position:fixed; inset:0; background:rgba(15,15,15,0.85); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:200; gap:14px; }
+  .spinner { width:36px; height:36px; border:3px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-text { font-size:13px; color:var(--text2); font-weight:500; }
+
+  /* DB status dot */
+  .db-dot { width:7px; height:7px; border-radius:50%; background:var(--text3); display:inline-block; margin-left:6px; }
+  .db-dot.online { background:var(--green); }
+  .db-dot.error { background:var(--red); }
 </style>
 </head>
 <body>
 <div class="app" id="app">
 
+<!-- LOADING -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Conectando ao banco de dados...</div>
+</div>
+
 <!-- LOGIN -->
-<div id="screen-login" class="login-screen">
+<div id="screen-login" class="login-screen" style="display:none;">
   <div class="login-card">
     <div class="brand">
       <div class="brand-icon">
@@ -172,7 +172,7 @@
 <!-- ADMIN -->
 <div id="screen-admin" style="display:none;" class="app">
   <div class="header">
-    <div class="header-logo"><div class="header-dot"></div><h2>Painel Administrativo</h2></div>
+    <div class="header-logo"><div class="header-dot"></div><h2>Painel Administrativo</h2><span class="db-dot online" title="Firestore conectado"></span></div>
     <div class="header-right">
       <span class="role-badge role-admin">Admin</span>
       <div class="avatar" id="adm-avatar">IG</div>
@@ -235,7 +235,7 @@
 <!-- RECEPCAO -->
 <div id="screen-recepcao" style="display:none;" class="app">
   <div class="header">
-    <div class="header-logo"><div class="header-dot"></div><h2>Recepção</h2></div>
+    <div class="header-logo"><div class="header-dot"></div><h2>Recepção</h2><span class="db-dot online" title="Firestore conectado"></span></div>
     <div class="header-right">
       <span class="role-badge role-recepcao">Recepção</span>
       <div class="avatar" id="rec-avatar">MR</div>
@@ -282,7 +282,7 @@
           <div class="upload-preview" id="upload-preview"></div>
         </div>
         <div id="rec-msg" class="alert" style="display:none;"></div>
-        <button class="btn btn-accent btn-full" onclick="abrirChamado()">📨 Enviar para equipe de manutenção</button>
+        <button class="btn btn-accent btn-full" id="btn-enviar" onclick="abrirChamado()">📨 Enviar para equipe de manutenção</button>
       </div>
     </div>
     <div id="rec-meus" class="page"><div id="rec-meus-list"></div></div>
@@ -292,7 +292,7 @@
 <!-- MANUTENCAO -->
 <div id="screen-manutencao" style="display:none;" class="app">
   <div class="header">
-    <div class="header-logo"><div class="header-dot"></div><h2>Equipe de Manutenção</h2></div>
+    <div class="header-logo"><div class="header-dot"></div><h2>Equipe de Manutenção</h2><span class="db-dot online" title="Firestore conectado"></span></div>
     <div class="header-right">
       <span class="role-badge role-manutencao">Manutenção</span>
       <div class="avatar" id="man-avatar">JO</div>
@@ -329,32 +329,119 @@
 </div>
 
 </div>
-<script>
-// ── STATE ──
-let SUITES = [
-  'Suíte 01','Suíte 02','Suíte 03','Suíte 04','Suíte 05',
-  'Suíte 06','Suíte 07','Suíte 08','Suíte 09','Suíte 10',
-  'Suíte 11','Suíte 12','Suíte 13','Suíte 14','Suíte 15',
-  'Suíte 16','Suíte 17','Suíte 18','Suíte 19','Suíte 20',
-  'Casa Amarela','Casa das Flores','Casa do Brejo',
-  'Chalé dos Amores','Bangalô do Bosque','Bangalô do Lago',
-  'Área da Piscina','Restaurante','Recepção','Área Comum','Jardim','Estacionamento','Cozinha'
-];
-let USERS = [
-  { user:'igarapes', pass:'igarapes1952', role:'admin', nome:'Administrador', initials:'IG' },
-];
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
+  onSnapshot, orderBy, query, serverTimestamp, getDoc, setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ── FIREBASE CONFIG ──
+const firebaseConfig = {
+  apiKey: "AIzaSyA31hRhZC0XvNwu1rzOdbK21b0ogPLD838",
+  authDomain: "igarapes-manutencao.firebaseapp.com",
+  projectId: "igarapes-manutencao",
+  storageBucket: "igarapes-manutencao.firebasestorage.app",
+  messagingSenderId: "201083342345",
+  appId: "1:201083342345:web:0a1ae3b32e4ec60ecf72d8"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+
+// ── COLEÇÕES ──
+const colChamados = collection(db, 'chamados');
+const colUsuarios  = collection(db, 'usuarios');
+const colSuites    = collection(db, 'suites');
+
+// ── STATE LOCAL (cache) ──
 let chamados = [];
-let nextId = 1;
+let USERS = [];
+let SUITES = [];
 let currentUser = null;
-let uploadedFiles = []; // array of {name, dataUrl, type}
+let uploadedFiles = [];
 let manActiveTab = 'abertos';
 let pendingConfirm = null;
+let unsubChamados = null;
+
+// ── INICIALIZAÇÃO ──
+async function inicializar() {
+  try {
+    // Carrega usuários
+    const usSnap = await getDocs(colUsuarios);
+    USERS = usSnap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
+
+    // Se não há usuários, cria o admin padrão
+    if (USERS.length === 0) {
+      await setDoc(doc(db, 'usuarios', 'admin-igarapes'), {
+        user: 'igarapes', pass: 'igarapes1952', role: 'admin',
+        nome: 'Administrador', initials: 'IG'
+      });
+      USERS = [{ firestoreId: 'admin-igarapes', user: 'igarapes', pass: 'igarapes1952', role: 'admin', nome: 'Administrador', initials: 'IG' }];
+    }
+
+    // Carrega suítes
+    const suitesSnap = await getDocs(colSuites);
+    SUITES = suitesSnap.docs.map(d => ({ firestoreId: d.id, nome: d.data().nome }));
+
+    // Se não há suítes, cria as padrão
+    if (SUITES.length === 0) {
+      const padrao = [
+        'Suíte 01','Suíte 02','Suíte 03','Suíte 04','Suíte 05',
+        'Suíte 06','Suíte 07','Suíte 08','Suíte 09','Suíte 10',
+        'Suíte 11','Suíte 12','Suíte 13','Suíte 14','Suíte 15',
+        'Suíte 16','Suíte 17','Suíte 18','Suíte 19','Suíte 20',
+        'Casa Amarela','Casa das Flores','Casa do Brejo',
+        'Chalé dos Amores','Bangalô do Bosque','Bangalô do Lago',
+        'Área da Piscina','Restaurante','Recepção','Área Comum','Jardim','Estacionamento','Cozinha'
+      ];
+      for (const nome of padrao) {
+        const ref = await addDoc(colSuites, { nome });
+        SUITES.push({ firestoreId: ref.id, nome });
+      }
+    }
+
+    esconderLoading();
+    mostrarLogin();
+  } catch (e) {
+    console.error('Erro ao inicializar:', e);
+    document.querySelector('.loading-text').textContent = '⚠️ Erro ao conectar. Verifique as regras do Firestore.';
+  }
+}
+
+function esconderLoading() {
+  document.getElementById('loading-overlay').style.display = 'none';
+}
+function mostrarLogin() {
+  show('screen-login');
+}
+
+// ── LISTENER TEMPO REAL ──
+function iniciarListenerChamados() {
+  if (unsubChamados) unsubChamados();
+  const q = query(colChamados, orderBy('criadoTimestamp', 'desc'));
+  unsubChamados = onSnapshot(q, snap => {
+    chamados = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
+    if (currentUser) {
+      if (currentUser.role === 'admin') renderAdmin();
+      else if (currentUser.role === 'recepcao') renderMeusChamados();
+      else if (currentUser.role === 'manutencao') renderManutencao();
+    }
+  });
+}
 
 // ── FILE UPLOAD ──
-function handleFiles(input) {
+window.handleFiles = function(input) {
   const files = Array.from(input.files);
   if (!files.length) return;
   files.forEach(file => {
+    // Limita arquivos maiores que 500KB (Firestore tem limite de 1MB por doc)
+    if (file.size > 500 * 1024) {
+      alert(`"${file.name}" é muito grande. Use imagens até 500KB.`);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = e => {
       uploadedFiles.push({ name: file.name, dataUrl: e.target.result, type: file.type });
@@ -362,9 +449,9 @@ function handleFiles(input) {
     };
     reader.readAsDataURL(file);
   });
-  // reset input so same file can be re-selected
   input.value = '';
-}
+};
+
 function renderUploadPreview() {
   const area = document.getElementById('upload-area');
   const preview = document.getElementById('upload-preview');
@@ -374,7 +461,7 @@ function renderUploadPreview() {
     icon.textContent = '✅';
     text.textContent = 'Clique para adicionar mais arquivos';
     area.style.borderColor = '#c9a84c';
-    preview.innerHTML = uploadedFiles.map((f,i) => {
+    preview.innerHTML = uploadedFiles.map((f, i) => {
       const isImg = f.type.startsWith('image/');
       return `<div class="upload-thumb">
         ${isImg ? `<img src="${f.dataUrl}" alt="${f.name}"/>` : `<span class="file-icon">🎥</span>`}
@@ -388,50 +475,76 @@ function renderUploadPreview() {
     preview.innerHTML = '';
   }
 }
-function removeFile(idx) {
+
+window.removeFile = function(idx) {
   uploadedFiles.splice(idx, 1);
   renderUploadPreview();
-}
+};
+
 function resetUpload() {
   uploadedFiles = [];
   renderUploadPreview();
 }
 
 // ── AUTH ──
-function show(id){
-  ['screen-login','screen-admin','screen-recepcao','screen-manutencao'].forEach(s=>{
-    const e=document.getElementById(s);if(e)e.style.display='none';
+function show(id) {
+  ['screen-login','screen-admin','screen-recepcao','screen-manutencao'].forEach(s => {
+    const e = document.getElementById(s);
+    if (e) e.style.display = 'none';
   });
-  document.getElementById(id).style.display='flex';
-}
-function doLogin(){
-  const u=document.getElementById('login-user').value.trim();
-  const p=document.getElementById('login-pass').value;
-  const f=USERS.find(x=>x.user===u&&x.pass===p);
-  document.getElementById('login-error').style.display='none';
-  if(!f){document.getElementById('login-error').style.display='block';return;}
-  currentUser=f;
-  if(f.role==='admin'){renderAdmin();show('screen-admin');}
-  else if(f.role==='recepcao'){renderRecepcao();show('screen-recepcao');}
-  else{renderManutencao();show('screen-manutencao');}
-}
-function doLogout(){
-  currentUser=null;resetUpload();
-  document.getElementById('login-user').value='';
-  document.getElementById('login-pass').value='';
-  document.getElementById('login-error').style.display='none';
-  show('screen-login');
+  document.getElementById(id).style.display = 'flex';
 }
 
+window.doLogin = function() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const f = USERS.find(x => x.user === u && x.pass === p);
+  document.getElementById('login-error').style.display = 'none';
+  if (!f) { document.getElementById('login-error').style.display = 'block'; return; }
+  currentUser = f;
+  iniciarListenerChamados();
+  if (f.role === 'admin') { renderAdmin(); show('screen-admin'); }
+  else if (f.role === 'recepcao') { renderRecepcao(); show('screen-recepcao'); }
+  else { renderManutencao(); show('screen-manutencao'); }
+};
+
+window.doLogout = function() {
+  if (unsubChamados) { unsubChamados(); unsubChamados = null; }
+  currentUser = null;
+  resetUpload();
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  show('screen-login');
+};
+
 // ── HELPERS ──
-function prioHtml(p){return p==='urgente'?'<span class="status-badge status-urgente">🔴 Urgente</span>':'<span class="status-badge" style="background:rgba(255,255,255,0.05);color:#666;">Normal</span>';}
-function statusHtml(s){const m={'aberto':'status-aberto','em-andamento':'status-em-andamento','concluido':'status-concluido'},l={'aberto':'Aberto','em-andamento':'Em andamento','concluido':'Concluído'};return `<span class="status-badge ${m[s]}">${l[s]}</span>`;}
-function setMsg(el,text,cls){el.className='alert '+cls;el.textContent=text;el.style.display='block';}
-function getTime(){const now=new Date();return `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;}
-function chamadoCard(c,actions=''){
-  const fotos = c.fotos||[];
+function prioHtml(p) {
+  return p === 'urgente'
+    ? '<span class="status-badge status-urgente">🔴 Urgente</span>'
+    : '<span class="status-badge" style="background:rgba(255,255,255,0.05);color:#666;">Normal</span>';
+}
+function statusHtml(s) {
+  const m = { 'aberto':'status-aberto','em-andamento':'status-em-andamento','concluido':'status-concluido' };
+  const l = { 'aberto':'Aberto','em-andamento':'Em andamento','concluido':'Concluído' };
+  return `<span class="status-badge ${m[s]}">${l[s]}</span>`;
+}
+function setMsg(el, text, cls) {
+  el.className = 'alert ' + cls;
+  el.textContent = text;
+  el.style.display = 'block';
+}
+function getTime() {
+  const now = new Date();
+  return `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+}
+function chamadoCard(c, actions = '') {
+  const fotos = c.fotos || [];
   const fotosHtml = fotos.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-    ${fotos.map(f=>f.type.startsWith('image/')?`<img src="${f.dataUrl}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border2);" alt="foto"/>`:`<div style="width:60px;height:60px;background:var(--bg3);border-radius:6px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:22px;">🎥</div>`).join('')}
+    ${fotos.map(f => f.type.startsWith('image/')
+      ? `<img src="${f.dataUrl}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border2);" alt="foto"/>`
+      : `<div style="width:60px;height:60px;background:var(--bg3);border-radius:6px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:22px;">🎥</div>`
+    ).join('')}
   </div>` : '';
   return `<div class="card">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
@@ -444,189 +557,268 @@ function chamadoCard(c,actions=''){
       <div style="text-align:right;flex-shrink:0;">${statusHtml(c.status)}<br><span style="display:inline-block;margin-top:4px;">${prioHtml(c.prio)}</span></div>
     </div>
     <div class="card-footer">
-      <span style="font-size:12px;color:#555;">#${c.id} · ${c.criadoEm}</span>
-      ${actions?`<div class="card-actions">${actions}</div>`:''}
+      <span style="font-size:12px;color:#555;">${c.criadoEm}</span>
+      ${actions ? `<div class="card-actions">${actions}</div>` : ''}
     </div>
   </div>`;
 }
 
 // ── CONFIRM ──
-function openConfirm(title,msg,onOk){
-  document.getElementById('confirm-title').textContent=title;
-  document.getElementById('confirm-msg').textContent=msg;
-  pendingConfirm=onOk;
-  document.getElementById('confirm-overlay').style.display='flex';
-}
-function closeConfirm(){document.getElementById('confirm-overlay').style.display='none';pendingConfirm=null;}
-document.getElementById('confirm-ok').onclick=()=>{if(pendingConfirm)pendingConfirm();closeConfirm();};
+window.openConfirm = function(title, msg, onOk) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  pendingConfirm = onOk;
+  document.getElementById('confirm-overlay').style.display = 'flex';
+};
+window.closeConfirm = function() {
+  document.getElementById('confirm-overlay').style.display = 'none';
+  pendingConfirm = null;
+};
+document.getElementById('confirm-ok').onclick = () => { if (pendingConfirm) pendingConfirm(); closeConfirm(); };
 
 // ── ADMIN ──
-function renderAdmin(){
-  document.getElementById('m-aberto').textContent=chamados.filter(c=>c.status==='aberto').length;
-  document.getElementById('m-andamento').textContent=chamados.filter(c=>c.status==='em-andamento').length;
-  document.getElementById('m-concluido').textContent=chamados.filter(c=>c.status==='concluido').length;
-  document.getElementById('admin-recentes').innerHTML=chamados.slice().reverse().slice(0,4).map(c=>chamadoCard(c)).join('')||'<div class="empty">Nenhum chamado ainda.</div>';
-  document.getElementById('admin-todos-list').innerHTML=chamados.slice().reverse().map(c=>chamadoCard(c)).join('')||'<div class="empty">Nenhum chamado ainda.</div>';
-  renderUsersList();renderSuitesList();
+function renderAdmin() {
+  document.getElementById('m-aberto').textContent = chamados.filter(c => c.status === 'aberto').length;
+  document.getElementById('m-andamento').textContent = chamados.filter(c => c.status === 'em-andamento').length;
+  document.getElementById('m-concluido').textContent = chamados.filter(c => c.status === 'concluido').length;
+  document.getElementById('admin-recentes').innerHTML = chamados.slice(0, 4).map(c => chamadoCard(c)).join('') || '<div class="empty">Nenhum chamado ainda.</div>';
+  document.getElementById('admin-todos-list').innerHTML = chamados.map(c => chamadoCard(c)).join('') || '<div class="empty">Nenhum chamado ainda.</div>';
+  renderUsersList();
+  renderSuitesList();
 }
-function renderUsersList(){
-  const list=USERS.filter(u=>u.role!=='admin');
-  document.getElementById('admin-users-list').innerHTML=list.length
-    ?list.map(u=>`<div class="user-row"><div class="user-info"><div class="user-avatar">${u.initials}</div><div><div style="font-size:14px;font-weight:600;color:#e8e8e8;">${u.nome}</div><div style="font-size:12px;color:#666;">@${u.user}</div></div></div><div style="display:flex;align-items:center;gap:10px;"><span class="role-badge role-${u.role}">${u.role==='recepcao'?'Recepção':'Manutenção'}</span><button class="btn btn-red btn-xs" onclick="removerUsuario('${u.user}')">Remover</button></div></div>`).join('')
-    :'<div style="padding:16px 0;color:var(--text3);font-size:13px;">Nenhum usuário cadastrado além do admin.</div>';
+
+function renderUsersList() {
+  const list = USERS.filter(u => u.role !== 'admin');
+  document.getElementById('admin-users-list').innerHTML = list.length
+    ? list.map(u => `<div class="user-row">
+        <div class="user-info">
+          <div class="user-avatar">${u.initials}</div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#e8e8e8;">${u.nome}</div>
+            <div style="font-size:12px;color:#666;">@${u.user}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="role-badge role-${u.role}">${u.role === 'recepcao' ? 'Recepção' : 'Manutenção'}</span>
+          <button class="btn btn-red btn-xs" onclick="removerUsuario('${u.firestoreId}','${u.nome}','${u.user}')">Remover</button>
+        </div>
+      </div>`).join('')
+    : '<div style="padding:16px 0;color:var(--text3);font-size:13px;">Nenhum usuário cadastrado além do admin.</div>';
 }
-function renderSuitesList(){
-  document.getElementById('admin-suites-list').innerHTML=SUITES.map((s,i)=>`<div class="suite-row"><div>${s}</div><button class="btn btn-red btn-xs" onclick="removerSuite(${i})">Remover</button></div>`).join('');
+
+function renderSuitesList() {
+  document.getElementById('admin-suites-list').innerHTML = SUITES.map((s, i) =>
+    `<div class="suite-row"><div>${s.nome}</div><button class="btn btn-red btn-xs" onclick="removerSuite('${s.firestoreId}','${s.nome}')">Remover</button></div>`
+  ).join('');
   populateSuiteDropdowns();
 }
-function populateSuiteDropdowns(){
-  const el=document.getElementById('rec-suite');if(!el)return;
-  const cur=el.value;
-  el.innerHTML='<option value="">Selecione o local...</option>'+SUITES.map(s=>`<option${s===cur?' selected':''}>${s}</option>`).join('');
+
+function populateSuiteDropdowns() {
+  const el = document.getElementById('rec-suite');
+  if (!el) return;
+  const cur = el.value;
+  el.innerHTML = '<option value="">Selecione o local...</option>' + SUITES.map(s => `<option${s.nome === cur ? ' selected' : ''}>${s.nome}</option>`).join('');
 }
-function adminTab(name){
-  document.querySelectorAll('#screen-admin .tab').forEach((t,i)=>t.classList.toggle('active',['visao','chamados','equipe','suites'][i]===name));
-  document.querySelectorAll('#screen-admin .page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('admin-'+name).classList.add('active');
+
+window.adminTab = function(name) {
+  document.querySelectorAll('#screen-admin .tab').forEach((t, i) =>
+    t.classList.toggle('active', ['visao','chamados','equipe','suites'][i] === name));
+  document.querySelectorAll('#screen-admin .page').forEach(p => p.classList.remove('active'));
+  document.getElementById('admin-' + name).classList.add('active');
   renderAdmin();
-}
-function criarUsuario(){
-  const nome=document.getElementById('new-nome').value.trim();
-  const user=document.getElementById('new-user').value.trim().toLowerCase().replace(/\s/g,'');
-  const pass=document.getElementById('new-pass').value;
-  const role=document.getElementById('new-role').value;
-  const msg=document.getElementById('new-user-msg');
-  if(!nome||!user||!pass){setMsg(msg,'Preencha todos os campos.','alert-info');return;}
-  if(USERS.find(u=>u.user===user)){setMsg(msg,'Este usuário já existe.','alert-error');return;}
-  const initials=nome.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
-  USERS.push({user,pass,role,nome,initials});
-  setMsg(msg,`✅ Usuário "${nome}" criado! Login: ${user}`,'alert-success');
-  document.getElementById('new-nome').value='';document.getElementById('new-user').value='';document.getElementById('new-pass').value='';
-  setTimeout(()=>{msg.style.display='none';renderUsersList();},2500);
-}
-function removerUsuario(userLogin){
-  const u=USERS.find(x=>x.user===userLogin);if(!u)return;
-  openConfirm('Remover usuário',`Deseja remover "${u.nome}" (@${u.user})? Esta ação não pode ser desfeita.`,()=>{
-    USERS=USERS.filter(x=>x.user!==userLogin);renderUsersList();
+};
+
+window.criarUsuario = async function() {
+  const nome = document.getElementById('new-nome').value.trim();
+  const user = document.getElementById('new-user').value.trim().toLowerCase().replace(/\s/g, '');
+  const pass = document.getElementById('new-pass').value;
+  const role = document.getElementById('new-role').value;
+  const msg = document.getElementById('new-user-msg');
+  if (!nome || !user || !pass) { setMsg(msg, 'Preencha todos os campos.', 'alert-info'); return; }
+  if (USERS.find(u => u.user === user)) { setMsg(msg, 'Este usuário já existe.', 'alert-error'); return; }
+  const initials = nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  try {
+    const ref = await addDoc(colUsuarios, { user, pass, role, nome, initials });
+    USERS.push({ firestoreId: ref.id, user, pass, role, nome, initials });
+    setMsg(msg, `✅ Usuário "${nome}" criado! Login: ${user}`, 'alert-success');
+    document.getElementById('new-nome').value = '';
+    document.getElementById('new-user').value = '';
+    document.getElementById('new-pass').value = '';
+    setTimeout(() => { msg.style.display = 'none'; renderUsersList(); }, 2500);
+  } catch(e) { setMsg(msg, 'Erro ao salvar. Tente novamente.', 'alert-error'); }
+};
+
+window.removerUsuario = function(firestoreId, nome, userLogin) {
+  openConfirm('Remover usuário', `Deseja remover "${nome}" (@${userLogin})? Esta ação não pode ser desfeita.`, async () => {
+    await deleteDoc(doc(db, 'usuarios', firestoreId));
+    USERS = USERS.filter(x => x.firestoreId !== firestoreId);
+    renderUsersList();
   });
-}
-function adicionarSuite(){
-  const val=document.getElementById('new-suite').value.trim();
-  const msg=document.getElementById('new-suite-msg');
-  if(!val){setMsg(msg,'Digite o nome do local.','alert-info');return;}
-  if(SUITES.find(s=>s.toLowerCase()===val.toLowerCase())){setMsg(msg,'Este local já está cadastrado.','alert-error');return;}
-  SUITES.push(val);
-  document.getElementById('new-suite').value='';
-  setMsg(msg,`✅ "${val}" adicionado com sucesso!`,'alert-success');
-  setTimeout(()=>{msg.style.display='none';renderSuitesList();},2000);
-}
-function removerSuite(idx){
-  const nome=SUITES[idx];
-  openConfirm('Remover local',`Deseja remover "${nome}" da lista?`,()=>{SUITES.splice(idx,1);renderSuitesList();});
-}
+};
+
+window.adicionarSuite = async function() {
+  const val = document.getElementById('new-suite').value.trim();
+  const msg = document.getElementById('new-suite-msg');
+  if (!val) { setMsg(msg, 'Digite o nome do local.', 'alert-info'); return; }
+  if (SUITES.find(s => s.nome.toLowerCase() === val.toLowerCase())) { setMsg(msg, 'Este local já está cadastrado.', 'alert-error'); return; }
+  try {
+    const ref = await addDoc(colSuites, { nome: val });
+    SUITES.push({ firestoreId: ref.id, nome: val });
+    document.getElementById('new-suite').value = '';
+    setMsg(msg, `✅ "${val}" adicionado com sucesso!`, 'alert-success');
+    setTimeout(() => { msg.style.display = 'none'; renderSuitesList(); }, 2000);
+  } catch(e) { setMsg(msg, 'Erro ao salvar. Tente novamente.', 'alert-error'); }
+};
+
+window.removerSuite = function(firestoreId, nome) {
+  openConfirm('Remover local', `Deseja remover "${nome}" da lista?`, async () => {
+    await deleteDoc(doc(db, 'suites', firestoreId));
+    SUITES = SUITES.filter(s => s.firestoreId !== firestoreId);
+    renderSuitesList();
+  });
+};
 
 // ── RECEPCAO ──
-function renderRecepcao(){
-  document.getElementById('rec-avatar').textContent=currentUser.initials;
-  populateSuiteDropdowns();renderMeusChamados();
-}
-function recTab(name){
-  document.querySelectorAll('#screen-recepcao .tab').forEach((t,i)=>t.classList.toggle('active',['novo','meus'][i]===name));
-  document.querySelectorAll('#screen-recepcao .page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('rec-'+name).classList.add('active');
-  if(name==='meus')renderMeusChamados();
-  if(name==='novo')populateSuiteDropdowns();
-}
-function renderMeusChamados(){
-  const meus=chamados.filter(c=>c.criadoPor===currentUser.nome).reverse();
-  document.getElementById('rec-meus-list').innerHTML=meus.length?meus.map(c=>chamadoCard(c)).join(''):'<div class="empty">📋 Você ainda não abriu nenhum chamado.</div>';
-}
-function abrirChamado(){
-  const suite=document.getElementById('rec-suite').value;
-  const tipo=document.getElementById('rec-tipo').value;
-  const desc=document.getElementById('rec-desc').value.trim();
-  const prio=document.getElementById('rec-prio').value;
-  const msg=document.getElementById('rec-msg');
-  if(!suite||!tipo||!desc){setMsg(msg,'⚠️ Preencha: local, tipo e descrição.','alert-error');return;}
-  const now=new Date();
-  const fmt=`${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-  chamados.push({
-    id:nextId++,suite,tipo,desc,prio,status:'aberto',
-    criadoPor:currentUser.nome,criadoEm:fmt,
-    fotos:[...uploadedFiles],
-    historico:[{text:`Chamado aberto por ${currentUser.nome}`,time:fmt}]
-  });
-  setMsg(msg,'✅ Chamado enviado! A equipe de manutenção foi notificada.','alert-success');
-  document.getElementById('rec-suite').value='';
-  document.getElementById('rec-tipo').value='';
-  document.getElementById('rec-desc').value='';
-  document.getElementById('rec-prio').value='normal';
-  resetUpload();
-  setTimeout(()=>msg.style.display='none',4000);
+function renderRecepcao() {
+  document.getElementById('rec-avatar').textContent = currentUser.initials;
+  populateSuiteDropdowns();
+  renderMeusChamados();
 }
 
+window.recTab = function(name) {
+  document.querySelectorAll('#screen-recepcao .tab').forEach((t, i) =>
+    t.classList.toggle('active', ['novo','meus'][i] === name));
+  document.querySelectorAll('#screen-recepcao .page').forEach(p => p.classList.remove('active'));
+  document.getElementById('rec-' + name).classList.add('active');
+  if (name === 'meus') renderMeusChamados();
+  if (name === 'novo') populateSuiteDropdowns();
+};
+
+function renderMeusChamados() {
+  const meus = chamados.filter(c => c.criadoPor === currentUser.nome);
+  document.getElementById('rec-meus-list').innerHTML = meus.length
+    ? meus.map(c => chamadoCard(c)).join('')
+    : '<div class="empty">📋 Você ainda não abriu nenhum chamado.</div>';
+}
+
+window.abrirChamado = async function() {
+  const suite = document.getElementById('rec-suite').value;
+  const tipo  = document.getElementById('rec-tipo').value;
+  const desc  = document.getElementById('rec-desc').value.trim();
+  const prio  = document.getElementById('rec-prio').value;
+  const msg   = document.getElementById('rec-msg');
+  const btn   = document.getElementById('btn-enviar');
+  if (!suite || !tipo || !desc) { setMsg(msg, '⚠️ Preencha: local, tipo e descrição.', 'alert-error'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  const now = new Date();
+  const fmt = `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  try {
+    await addDoc(colChamados, {
+      suite, tipo, desc, prio,
+      status: 'aberto',
+      criadoPor: currentUser.nome,
+      criadoEm: fmt,
+      criadoTimestamp: serverTimestamp(),
+      fotos: [...uploadedFiles],
+      historico: [{ text: `Chamado aberto por ${currentUser.nome}`, time: fmt }]
+    });
+    setMsg(msg, '✅ Chamado enviado! A equipe de manutenção foi notificada.', 'alert-success');
+    document.getElementById('rec-suite').value = '';
+    document.getElementById('rec-tipo').value = '';
+    document.getElementById('rec-desc').value = '';
+    document.getElementById('rec-prio').value = 'normal';
+    resetUpload();
+    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+  } catch(e) {
+    setMsg(msg, '❌ Erro ao enviar. Verifique sua conexão.', 'alert-error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📨 Enviar para equipe de manutenção';
+  }
+};
+
 // ── MANUTENCAO ──
-function renderManutencao(){
-  document.getElementById('man-avatar').textContent=currentUser.initials;
-  const novos=chamados.filter(c=>c.status==='aberto');
-  document.getElementById('man-notifs').innerHTML=novos.length
-    ?`<div class="notif"><div class="notif-dot"></div><div class="notif-text">🔔 <strong>${novos.length} chamado(s) aberto(s)</strong> aguardando sua atenção!</div></div>`:'';
+function renderManutencao() {
+  document.getElementById('man-avatar').textContent = currentUser.initials;
+  const novos = chamados.filter(c => c.status === 'aberto');
+  document.getElementById('man-notifs').innerHTML = novos.length
+    ? `<div class="notif"><div class="notif-dot"></div><div class="notif-text">🔔 <strong>${novos.length} chamado(s) aberto(s)</strong> aguardando sua atenção!</div></div>`
+    : '';
   renderManLists();
 }
-function renderManLists(){
-  const ab=chamados.filter(c=>c.status==='aberto');
-  const and=chamados.filter(c=>c.status==='em-andamento');
-  const con=chamados.filter(c=>c.status==='concluido');
-  document.getElementById('man-abertos-list').innerHTML=ab.length
-    ?ab.map(c=>chamadoCard(c,`<button class="btn btn-blue btn-xs" onclick="aceitarChamado(${c.id})">✔ Aceitar</button><button class="btn btn-outline btn-xs" onclick="openManDetail(${c.id})">Detalhes</button>`)).join('')
-    :'<div class="empty">✅ Nenhum chamado pendente!</div>';
-  document.getElementById('man-andamento-list').innerHTML=and.length
-    ?and.map(c=>chamadoCard(c,`<button class="btn btn-green btn-xs" onclick="concluirChamado(${c.id})">✅ Concluído</button><button class="btn btn-amber btn-xs" onclick="anexarNF(${c.id})">📄 Nota fiscal</button><button class="btn btn-outline btn-xs" onclick="openManDetail(${c.id})">Detalhes</button>`)).join('')
-    :'<div class="empty">Nenhum chamado em andamento.</div>';
-  document.getElementById('man-concluidos-list').innerHTML=con.length
-    ?con.map(c=>chamadoCard(c)).join('')
-    :'<div class="empty">Nenhum chamado concluído ainda.</div>';
+
+function renderManLists() {
+  const ab  = chamados.filter(c => c.status === 'aberto');
+  const and = chamados.filter(c => c.status === 'em-andamento');
+  const con = chamados.filter(c => c.status === 'concluido');
+  document.getElementById('man-abertos-list').innerHTML = ab.length
+    ? ab.map(c => chamadoCard(c, `<button class="btn btn-blue btn-xs" onclick="aceitarChamado('${c.firestoreId}')">✔ Aceitar</button><button class="btn btn-outline btn-xs" onclick="openManDetail('${c.firestoreId}')">Detalhes</button>`)).join('')
+    : '<div class="empty">✅ Nenhum chamado pendente!</div>';
+  document.getElementById('man-andamento-list').innerHTML = and.length
+    ? and.map(c => chamadoCard(c, `<button class="btn btn-green btn-xs" onclick="concluirChamado('${c.firestoreId}')">✅ Concluído</button><button class="btn btn-amber btn-xs" onclick="anexarNF('${c.firestoreId}')">📄 Nota fiscal</button><button class="btn btn-outline btn-xs" onclick="openManDetail('${c.firestoreId}')">Detalhes</button>`)).join('')
+    : '<div class="empty">Nenhum chamado em andamento.</div>';
+  document.getElementById('man-concluidos-list').innerHTML = con.length
+    ? con.map(c => chamadoCard(c)).join('')
+    : '<div class="empty">Nenhum chamado concluído ainda.</div>';
 }
-function manTab(name){
-  manActiveTab=name;
-  document.querySelectorAll('#screen-manutencao .tab').forEach((t,i)=>t.classList.toggle('active',['abertos','andamento','concluidos'][i]===name));
-  document.querySelectorAll('#screen-manutencao .page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('man-'+name).classList.add('active');
+
+window.manTab = function(name) {
+  manActiveTab = name;
+  document.querySelectorAll('#screen-manutencao .tab').forEach((t, i) =>
+    t.classList.toggle('active', ['abertos','andamento','concluidos'][i] === name));
+  document.querySelectorAll('#screen-manutencao .page').forEach(p => p.classList.remove('active'));
+  document.getElementById('man-' + name).classList.add('active');
   document.getElementById('man-detail').classList.remove('open');
-}
-function aceitarChamado(id){
-  const c=chamados.find(x=>x.id===id);if(!c)return;
-  c.status='em-andamento';c.historico.push({text:`Aceito por ${currentUser.nome}`,time:getTime()});
-  renderManutencao();
-}
-function concluirChamado(id){
-  const c=chamados.find(x=>x.id===id);if(!c)return;
-  c.status='concluido';c.historico.push({text:`Concluído por ${currentUser.nome}`,time:getTime()});
+};
+
+window.aceitarChamado = async function(firestoreId) {
+  const c = chamados.find(x => x.firestoreId === firestoreId);
+  if (!c) return;
+  const novoHistorico = [...(c.historico || []), { text: `Aceito por ${currentUser.nome}`, time: getTime() }];
+  await updateDoc(doc(db, 'chamados', firestoreId), { status: 'em-andamento', historico: novoHistorico });
+};
+
+window.concluirChamado = async function(firestoreId) {
+  const c = chamados.find(x => x.firestoreId === firestoreId);
+  if (!c) return;
+  const novoHistorico = [...(c.historico || []), { text: `Concluído por ${currentUser.nome}`, time: getTime() }];
+  await updateDoc(doc(db, 'chamados', firestoreId), { status: 'concluido', historico: novoHistorico });
   document.getElementById('man-detail').classList.remove('open');
-  renderManutencao();manTab('concluidos');
-}
-function anexarNF(id){
-  const c=chamados.find(x=>x.id===id);if(!c)return;
-  // create hidden file input for NF
-  const inp=document.createElement('input');
-  inp.type='file';inp.accept='image/*,application/pdf';
-  inp.onchange=()=>{
-    if(!inp.files.length)return;
-    c.historico.push({text:`📄 Nota fiscal anexada por ${currentUser.nome} (${inp.files[0].name})`,time:getTime()});
-    renderManutencao();
+  manTab('concluidos');
+};
+
+window.anexarNF = function(firestoreId) {
+  const c = chamados.find(x => x.firestoreId === firestoreId);
+  if (!c) return;
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*,application/pdf';
+  inp.onchange = async () => {
+    if (!inp.files.length) return;
+    const novoHistorico = [...(c.historico || []), { text: `📄 Nota fiscal anexada por ${currentUser.nome} (${inp.files[0].name})`, time: getTime() }];
+    await updateDoc(doc(db, 'chamados', firestoreId), { historico: novoHistorico });
   };
   inp.click();
-}
-function openManDetail(id){
-  const c=chamados.find(x=>x.id===id);if(!c)return;
-  document.querySelectorAll('#screen-manutencao .page').forEach(p=>p.classList.remove('active'));
-  const det=document.getElementById('man-detail');det.classList.add('open');
-  const fotos=c.fotos||[];
-  const fotosHtml=fotos.length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">${fotos.map(f=>f.type.startsWith('image/')?`<img src="${f.dataUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);" alt="foto"/>`:`<div style="width:80px;height:80px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:32px;">🎥</div>`).join('')}</div>`:'';
-  det.querySelector('#man-detail-content').innerHTML=`
+};
+
+window.openManDetail = function(firestoreId) {
+  const c = chamados.find(x => x.firestoreId === firestoreId);
+  if (!c) return;
+  document.querySelectorAll('#screen-manutencao .page').forEach(p => p.classList.remove('active'));
+  const det = document.getElementById('man-detail');
+  det.classList.add('open');
+  const fotos = c.fotos || [];
+  const fotosHtml = fotos.length
+    ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        ${fotos.map(f => f.type.startsWith('image/')
+          ? `<img src="${f.dataUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);" alt="foto"/>`
+          : `<div style="width:80px;height:80px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:32px;">🎥</div>`
+        ).join('')}
+      </div>` : '';
+  det.querySelector('#man-detail-content').innerHTML = `
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-        <div><div class="card-title" style="font-size:18px;">${c.suite}</div><div class="card-sub">${c.tipo} · Chamado #${c.id}</div></div>
+        <div><div class="card-title" style="font-size:18px;">${c.suite}</div><div class="card-sub">${c.tipo} · Chamado</div></div>
         <div style="text-align:right;">${statusHtml(c.status)}<br><span style="display:inline-block;margin-top:4px;">${prioHtml(c.prio)}</span></div>
       </div>
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
@@ -636,19 +828,23 @@ function openManDetail(id){
       </div>
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
         <div class="section-title">Histórico</div>
-        ${c.historico.map(h=>`<div class="history-item"><div class="history-dot"></div><div><div class="history-text">${h.text}</div><div class="history-time">${h.time}</div></div></div>`).join('')}
+        ${(c.historico||[]).map(h => `<div class="history-item"><div class="history-dot"></div><div><div class="history-text">${h.text}</div><div class="history-time">${h.time}</div></div></div>`).join('')}
       </div>
-      ${c.status==='em-andamento'?`<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-green btn-sm" onclick="concluirChamado(${c.id})">✅ Marcar como concluído</button>
-        <button class="btn btn-amber btn-sm" onclick="anexarNF(${c.id})">📄 Anexar nota fiscal</button>
-      </div>`:''}
-      ${c.status==='aberto'?`<div style="margin-top:16px;"><button class="btn btn-blue btn-sm" onclick="aceitarChamado(${c.id})">✔ Aceitar este chamado</button></div>`:''}
+      ${c.status === 'em-andamento' ? `<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-green btn-sm" onclick="concluirChamado('${c.firestoreId}')">✅ Marcar como concluído</button>
+        <button class="btn btn-amber btn-sm" onclick="anexarNF('${c.firestoreId}')">📄 Anexar nota fiscal</button>
+      </div>` : ''}
+      ${c.status === 'aberto' ? `<div style="margin-top:16px;"><button class="btn btn-blue btn-sm" onclick="aceitarChamado('${c.firestoreId}')">✔ Aceitar este chamado</button></div>` : ''}
     </div>`;
-}
-function closeManDetail(){
+};
+
+window.closeManDetail = function() {
   document.getElementById('man-detail').classList.remove('open');
-  document.getElementById('man-'+manActiveTab).classList.add('active');
-}
+  document.getElementById('man-' + manActiveTab).classList.add('active');
+};
+
+// ── START ──
+inicializar();
 </script>
 </body>
 </html>
