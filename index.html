@@ -404,6 +404,25 @@ async function inicializar() {
     }
 
     esconderLoading();
+
+    // Tenta restaurar sessão salva
+    const sessaoSalva = localStorage.getItem('fazenda_sessao');
+    if (sessaoSalva) {
+      try {
+        const dados = JSON.parse(sessaoSalva);
+        const usuarioAtual = USERS.find(u => u.user === dados.user && u.pass === dados.pass);
+        if (usuarioAtual) {
+          currentUser = usuarioAtual;
+          iniciarListenerChamados();
+          if (usuarioAtual.role === 'admin') { renderAdmin(); show('screen-admin'); return; }
+          else if (usuarioAtual.role === 'recepcao') { renderRecepcao(); show('screen-recepcao'); return; }
+          else { renderManutencao(); show('screen-manutencao'); return; }
+        }
+      } catch(e) {
+        localStorage.removeItem('fazenda_sessao');
+      }
+    }
+
     mostrarLogin();
   } catch (e) {
     console.error('Erro ao inicializar:', e);
@@ -502,6 +521,8 @@ window.doLogin = function() {
   document.getElementById('login-error').style.display = 'none';
   if (!f) { document.getElementById('login-error').style.display = 'block'; return; }
   currentUser = f;
+  // Salva sessão no navegador
+  localStorage.setItem('fazenda_sessao', JSON.stringify({ user: f.user, pass: f.pass }));
   iniciarListenerChamados();
   if (f.role === 'admin') { renderAdmin(); show('screen-admin'); }
   else if (f.role === 'recepcao') { renderRecepcao(); show('screen-recepcao'); }
@@ -511,6 +532,8 @@ window.doLogin = function() {
 window.doLogout = function() {
   if (unsubChamados) { unsubChamados(); unsubChamados = null; }
   currentUser = null;
+  // Remove sessão salva
+  localStorage.removeItem('fazenda_sessao');
   resetUpload();
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
